@@ -1,0 +1,41 @@
+FROM scratch
+
+ADD http://dl-cdn.alpinelinux.org/alpine/v3.6/releases/armhf/alpine-minirootfs-3.6.2-armhf.tar.gz /
+ADD qemu-arm-static /usr/bin/qemu-arm-static
+
+RUN cat /etc/issue && \
+\
+apk update &&  \
+apk add \
+    gnupg \
+    dnsmasq \
+    hostapd \
+    iproute2 \
+    iw \
+    dbus-dev \
+    expat-dev \
+    nodejs \
+    nodejs-npm \
+    python \
+    make \
+    git \
+    g++ 
+
+RUN mkdir -p /usr/src/app/
+
+WORKDIR /usr/src/app
+
+COPY package.json /usr/src/app/
+
+RUN JOBS=MAX npm install --unsafe-perm --production && npm cache clean
+
+COPY bower.json .bowerrc /usr/src/app/
+
+RUN ./node_modules/.bin/bower --allow-root install \
+    && ./node_modules/.bin/bower --allow-root cache clean
+
+COPY . /usr/src/app/
+
+RUN ./node_modules/.bin/coffee -c ./src
+
+CMD bash start
